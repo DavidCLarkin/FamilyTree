@@ -1,3 +1,9 @@
+/**
+ * Driver class with main method
+ * @author David Larkin, 20070186
+ * @version 1.0
+ */
+
 package main;
 
 import java.awt.EventQueue;
@@ -5,18 +11,24 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import javax.sound.midi.Synthesizer;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 public class Driver 
 {
 	//public Scanner scan;
 	public static GuiModel model;
-	Reader reader;
+	private Reader reader;
+	private ArrayList<Person> finalChildren = new ArrayList<Person>();
+	private ArrayList<Person> finalAncestors = new ArrayList<Person>();
 	
 	public static void main(String[] args)
 	{
@@ -54,23 +66,7 @@ public class Driver
 			@Override
 			public void actionPerformed(ActionEvent e)  //If button pressed
 			{
-				String input = capitaliseWord(model.textfield.getText()); //capitalise the first letter
-				try
-				{
-					if(input.equals(reader.getPeople().get(input).getName()))
-					{
-						model.output.setText(reader.getPeople().get(input).toString());
-						model.nameOutput.setText(reader.getPeople().get(input).getName());
-						model.genderOutput.setText(Character.toString(reader.getPeople().get(input).getGender()));
-						model.dobOutput.setText(Integer.toString(reader.getPeople().get(input).getDateOfBirth()));
-						model.motherOutput.setText(reader.getPeople().get(input).getMother());
-						model.fatherOutput.setText(reader.getPeople().get(input).getFather());
-					}
-				}
-				catch(Exception ex)
-				{
-					System.out.println("Invalid input");
-				}
+				displayPerson();
 			}
 		});
 		
@@ -80,10 +76,9 @@ public class Driver
 			@Override
 		    public void actionPerformed(ActionEvent e)
 		    {
-		        model.createFrame();
+		        model.createFrame(); //create the new window
 		        EventQueue.invokeLater(new Runnable() //invoke later
 		        {
-
 					@Override
 					public void run() 
 					{
@@ -93,6 +88,31 @@ public class Driver
 			    			public void actionPerformed(ActionEvent e) 
 			    			{
 			    				addPerson();
+			    				System.out.println(reader.getPeople().size());
+			    			}
+			            });
+					}
+		        });
+		    }
+		});
+		
+		model.ancestorButton.addActionListener(new ActionListener()
+		{
+			@Override
+		    public void actionPerformed(ActionEvent e)
+		    {
+		        model.createAncestorFrame(); //create the new window
+		        EventQueue.invokeLater(new Runnable() //invoke later
+		        {
+					@Override
+					public void run() 
+					{
+			            model.searchButtonTwo.addActionListener(new ActionListener()
+			            {
+			    			@Override
+			    			public void actionPerformed(ActionEvent e) 
+			    			{
+			    				displayPersonAncDes();
 			    			}
 			            });
 					}
@@ -101,8 +121,98 @@ public class Driver
 		});
 	}
 	
+	private void displayPersonAncDes()
+	{
+		String name = null;
+		StringBuilder descendants = new StringBuilder();
+		StringBuilder ancestors = new StringBuilder();
+		
+		try
+		{
+			name = capitaliseWord(model.textfieldName.getText());
+			
+		}
+		catch(Exception exc)
+		{
+			System.err.println("Invalid, please enter a name");
+		}
+		
+		if(name == null || name.length() < 1 || !reader.getPeople().containsKey(name))
+		{
+			model.createErrorPane("Person does not exist, or found empty field", "No Person");
+		}
+		else
+		{
+			//Add all children to list
+			allChildren(reader.getPeople().get(name));
+			//Sorts by date
+			Collections.sort(finalChildren);
+		
+			for(Person child : finalChildren)
+			{
+				descendants.append(child.getName()+ "("+child.getDateOfBirth()+")(" +child.getGender() +")" + ", ");
+			}
+		
+			model.desOutput.setText(descendants.toString());
+			finalChildren.clear(); //clear the list for next time
+		
+			//Add all ancestors to list
+			allAncestors(reader.getPeople().get(name));
+			//Sort by date
+			Collections.sort(finalAncestors);
+			
+			for(Person anc : finalAncestors)
+			{
+				ancestors.append(anc.getName()+ "(" + anc.getDateOfBirth()+")("+ anc.getGender() +")" + ", ");
+			}
+		
+			model.ancOutput.setText(ancestors.toString());
+			finalAncestors.clear();
+		}
+		
+	}
+	
+	/**
+	 * Recursive algorithm to get all children a person has
+	 * and adding them to a list
+	 * @param person
+	 * @return
+	 */
+	public ArrayList<Person> allChildren(Person person)
+	{
+	   ArrayList<Person> allChildren = new ArrayList<Person>();
+	   for(Person child : person.getChildren()) //for each person's children
+	   {
+	       allChildren.addAll(allChildren(child)); //add all their children 
+	       finalChildren.add(child);
+	   }
+	   return allChildren;
+	}
+	
+	/**
+	 * Method to add all the ancestors a person has
+	 * to a list
+	 * @param person
+	 * @return
+	 */
+	public ArrayList<Person> allAncestors(Person person)
+	{
+		ArrayList<Person> ancestors = new ArrayList<Person>();
+		if(person.hasMother()) //only if person has mother
+		{
+			ancestors.addAll(allAncestors(person.getpMother())); //addAll mothers gotten from person.getpMother()
+			finalAncestors.add(person.getpMother()); //Add to global list as the function enters this if statement
+		}
+		if(person.hasFather())
+		{
+			ancestors.addAll(allAncestors(person.getpFather()));
+			finalAncestors.add(person.getpFather());
+		}
+		return ancestors;
+	}
 	/**
 	 * Method to add a person to the map
+	 * and handle the exceptions
 	 */
 	private void addPerson()
 	{
@@ -180,7 +290,33 @@ public class Driver
 		}
 		else
 		{
-			System.err.println("Could not create new Person");
+			model.createErrorPane("Please check your details are properly inputted, or not empty", "Incorrect Details");
+		}
+	}
+	
+	/**
+	 * Method to display a person based on input
+	 */
+	private void displayPerson()
+	{
+		if(model.textfield.getText().length() < 1 || model.textfield.getText() == null)
+			return;
+		String input = capitaliseWord(model.textfield.getText()); //capitalise the first letter
+		try
+		{
+			if(input.equals(reader.getPeople().get(input).getName()))
+			{
+				model.output.setText(reader.getPeople().get(input).toString());
+				model.nameOutput.setText(reader.getPeople().get(input).getName());
+				model.genderOutput.setText(Character.toString(reader.getPeople().get(input).getGender()));
+				model.dobOutput.setText(Integer.toString(reader.getPeople().get(input).getDateOfBirth()));
+				model.motherOutput.setText(reader.getPeople().get(input).getMother());
+				model.fatherOutput.setText(reader.getPeople().get(input).getFather());
+			}
+		}
+		catch(Exception ex)
+		{
+			model.createWrongPane("Person does not exist!", "Doesn't Exist"); //create error pane if person doesn't exist
 		}
 	}
 	
@@ -267,23 +403,5 @@ public class Driver
 		}
 	}
 	
-	/**
-	 * Returns a small tree
-	 * @param person
-	 * @return
-	 */
-	public Node addNodes(Person person)
-	{
-		Node root = new Node(person, null, null);
-		if(person.hasMother())
-		{
-			root.left = (new Node(person.getpMother(), null, null));
-		}
-		if(person.hasFather())
-		{
-			root.right = (new Node(person.getpFather(), null, null));
-		}
-		return root;
-	}
 	
 }

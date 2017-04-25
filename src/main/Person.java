@@ -1,8 +1,14 @@
+/**
+ * Person class
+ * @author David Larkin, 20070186
+ * @version 1.0
+ */
+
 package main;
 
 import java.util.ArrayList;
 
-public class Person
+public class Person implements Comparable<Person>
 {
 	private String name;
 	private char gender;
@@ -125,23 +131,6 @@ public class Person
 		this.pFather = pFather;
 	}
 
-	/*@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((children == null) ? 0 : children.hashCode());
-		result = prime * result + dateOfBirth;
-		result = prime * result + ((father == null) ? 0 : father.hashCode());
-		result = prime * result + gender;
-		result = prime * result + ((mother == null) ? 0 : mother.hashCode());
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((pFather == null) ? 0 : pFather.hashCode());
-		result = prime * result + ((pMother == null) ? 0 : pMother.hashCode());
-		result = prime * result + ((siblings == null) ? 0 : siblings.hashCode());
-		return result;
-	}
-	*/
-
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -158,16 +147,21 @@ public class Person
 		return children;
 	}
 	
-	public Person getChildAtIndex(int index)
-	{
-		return children.get(index);
-	}
-	
 	public void setChildren(ArrayList<Person> children)
 	{
 		this.children = children;
 	}
 	
+	public String childToString()
+	{
+		String childrens="";
+		if(!this.children.isEmpty())
+		{
+			for(Person child : children)
+				childrens+= child.toString()+", ";
+		}
+		return childrens;
+	}
 	public boolean hasMother()
 	{
 		if(this.getpMother() != null)
@@ -192,6 +186,12 @@ public class Person
 		else
 			return "Person (Name: " + name + ", Gender: " + gender + ", DoB: " + dateOfBirth + ", Mother: "
 				+ mother + ", Father: " + father + ") |";
+	}
+
+	@Override
+	public int compareTo(Person that) 
+	{
+		return this.getDateOfBirth() - that.getDateOfBirth();
 	}
 	
 	

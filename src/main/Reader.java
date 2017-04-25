@@ -1,3 +1,9 @@
+/**
+ * Reader class to read and parse the file, and add the Person's to a HashMap
+ * @author David Larkin, 20070186
+ * @version 1.0
+ */
+
 package main;
 
 import java.io.File;
@@ -6,7 +12,7 @@ import java.util.Scanner;
 
 public class Reader 
 {
-	public HashMap<String, Person> people = new HashMap<String, Person>();
+	private HashMap<String, Person> people = new HashMap<String, Person>();
 	private Scanner scan;
 	
 	public Reader()
